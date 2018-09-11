@@ -1,0 +1,17 @@
+<component name="libraryTable">
+  <library name="httpclient-4.5.6">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/Downloads/ImaginariumTheGame/ImaginariumTheGame/libs/httpclient-4.5.6.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/ImaginariumTheGame/ImaginariumTheGame/libs/telegrambots-3.6.1-jar-with-dependencies.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/ImaginariumTheGame/ImaginariumTheGame/libs/telegrambots-3.6.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/ImaginariumTheGame/ImaginariumTheGame/libs/telegrambots-abilities-3.6-jar-with-dependencies.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/ImaginariumTheGame/ImaginariumTheGame/libs/telegrambots-abilities-3.6.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/ImaginariumTheGame/ImaginariumTheGame/libs/telegrambots-meta-3.6-jar-with-dependencies.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/ImaginariumTheGame/ImaginariumTheGame/libs/telegrambots-meta-3.6.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/ImaginariumTheGame/ImaginariumTheGame/libs/telegrambotsextensions-3.6-jar-with-dependencies.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/ImaginariumTheGame/ImaginariumTheGame/libs/telegrambotsextensions-3.6.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

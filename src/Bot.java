@@ -6,33 +6,39 @@ import org.telegram.telegrambots.api.objects.replykeyboard.buttons.InlineKeyboar
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 
-import java.io.FileReader;
-import java.io.IOException;
+import java.awt.*;
+import java.io.*;
+import java.sql.Array;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static java.lang.Math.toIntExact;
 
 public class Bot extends TelegramLongPollingBot {
     private static Log logging;
-    private final static String dataFile = "/data.txt";
     private static String username;
     private static String token;
+    private Chat chat;
+
+    static {
+        username = new String();
+        token = new String();
+    }
 
     public Bot(Log logging){
         this.logging = logging;
+        this.chat = new Chat(logging);
         try {
-            FileReader reader = new FileReader(dataFile);
-            int c;
-            while ((char)(c = reader.read()) != '\n') {
-                username += (char)c;
-            }
-            while ((c = reader.read()) != -1) {
-                token += (char)c;
-            }
+            FileInputStream fs = new FileInputStream(Files.dataFile);
+            BufferedReader br = new BufferedReader(new InputStreamReader(fs));
+            token = br.readLine();
+            username = br.readLine();
+            logging.log("\nusername: " + username +"\ntoken: " + token);
         }
         catch (IOException e) {
-            logging.log("No chatId", "Exception", e.getMessage());
+            logging.log("ERROR: " + e.getMessage());
         }
     }
 
@@ -50,30 +56,63 @@ public class Bot extends TelegramLongPollingBot {
 
             switch (message) {
                 case "/start":
-                    answer = "Hello, my friend! Welcome to the Imaginarium game :)\n" +
-                            "Please, choose your color.";
-                    SendMessage sendMessage = new SendMessage()
-                            .setChatId(chatId)
-                            .setText(answer);
-                    InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
-                    List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
-                    List<InlineKeyboardButton> rowInline = new ArrayList<>();
-                    rowInline.add(new InlineKeyboardButton().setText("Red").setCallbackData("red"));
-                    rowInline.add(new InlineKeyboardButton().setText("Blue").setCallbackData("blue"));
-                    rowInline.add(new InlineKeyboardButton().setText("Green").setCallbackData("green"));
-                    rowInline.add(new InlineKeyboardButton().setText("Yellow").setCallbackData("yellow"));
-                    rowsInline.add(rowInline);
-                    inlineKeyboardMarkup.setKeyboard(rowsInline);
-                    sendMessage.setReplyMarkup(inlineKeyboardMarkup);
-                    try {
-                        execute(sendMessage); 
-                    } catch (TelegramApiException e) {
-                        e.printStackTrace();
+                    String firstName = update.getMessage().getChat().getFirstName();
+                    String lastName = update.getMessage().getChat().getLastName();
+                    String username = update.getMessage().getChat().getUserName();
+                    long userId = update.getMessage().getChat().getId();
+                    if (!chat.findPlayer(userId)) {
+                        Player player = new Player(firstName, lastName, username, userId);
+
+                        if (chat.isEmpty()){
+                            answer = "Hello, my friend! Welcome to the Imaginarium game :)\n" +
+                                    "You're the first player.";
+                        } else {
+                            String joinedPlayers = "";
+                            for (Player e : chat.getPlayers().values()){
+                                joinedPlayers += e.getUsername() + " ";
+                            }
+                            if (chat.getPlayers().size() == 1) {
+                                answer = "Hello, my friend! Welcome to the Imaginarium game :)\n" +
+                                        joinedPlayers + "is in game.";
+                            } else {
+                                answer = "Hello, my friend! Welcome to the Imaginarium game :)\n" +
+                                        joinedPlayers + "are in game.";
+                            }
+                        }
+
+                        chat.addPlayer(player);
+                        sendMsg(update.getMessage().getChatId().toString(), answer);
+
+                        answer = "Please, choose your color.";
+                        SendMessage sendMessage = new SendMessage().setChatId(chatId).setText(answer);
+                        logging.log(chatId, "Answer", answer);
+
+                        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+                        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+                        List<InlineKeyboardButton> rowInline = new ArrayList<>();
+
+                        rowInline.add(new InlineKeyboardButton().setText("Red").setCallbackData("red"));
+                        rowInline.add(new InlineKeyboardButton().setText("Blue").setCallbackData("blue"));
+                        rowInline.add(new InlineKeyboardButton().setText("Green").setCallbackData("green"));
+                        rowInline.add(new InlineKeyboardButton().setText("Yellow").setCallbackData("yellow"));
+                        rowsInline.add(rowInline);
+                        inlineKeyboardMarkup.setKeyboard(rowsInline);
+                        sendMessage.setReplyMarkup(inlineKeyboardMarkup);
+
+                        try {
+                            execute(sendMessage);
+                        } catch (TelegramApiException e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        answer = "You can't join to another game";
+                        sendMsg(update.getMessage().getChatId().toString(), answer);
                     }
                     break;
 
                 case "/help":
                     answer = "You can control me by sending these commands:\n\n" +
+                            "/start : Start to play\n" +
                             "/rules : Get the game rules\n" +
                             "/";
                     sendMsg(update.getMessage().getChatId().toString(), answer);
@@ -91,19 +130,23 @@ public class Bot extends TelegramLongPollingBot {
 
         } else if (update.hasCallbackQuery()) {
             String callData = update.getCallbackQuery().getData();
-            long messageId = update.getCallbackQuery().getMessage().getMessageId();
-            long chatId = update.getCallbackQuery().getMessage().getChatId();
-            String answer = "Your color is " + callData;
-            EditMessageText newMessage = new EditMessageText()
-                    .setChatId(chatId)
-                    .setMessageId(toIntExact(messageId))
-                    .setText(answer);
-            try {
-                execute(newMessage);
-                logging.log(String.valueOf(chatId), "Action", "Player has chosen the color: " + callData);
-            } catch (TelegramApiException e) {
-                logging.log(String.valueOf(chatId), "Exception", e.toString());
-                logging.log(String.valueOf(chatId), "Stack trace", e.getStackTrace().toString());
+            if (List.of("red", "blue", "green", "yellow").contains(callData)) {
+                long messageId = update.getCallbackQuery().getMessage().getMessageId();
+                long chatId = update.getCallbackQuery().getMessage().getChatId();
+                String answer = "Your color is " + callData;
+                EditMessageText newMessage = new EditMessageText()
+                        .setChatId(chatId)
+                        .setMessageId(toIntExact(messageId))
+                        .setText(answer);
+                try {
+                    execute(newMessage);
+                    //TODO player.setColor(callData);
+                    logging.log(String.valueOf(chatId), "Action", "Player has chosen the color: " + callData);
+                    logging.log(String.valueOf(chatId), "Answer", answer);
+                } catch (TelegramApiException e) {
+                    logging.log(String.valueOf(chatId), "Exception", e.toString());
+                    logging.log(String.valueOf(chatId), "Stack trace", e.getStackTrace().toString());
+                }
             }
         }
     }
@@ -117,6 +160,7 @@ public class Bot extends TelegramLongPollingBot {
         sendMessage.enableMarkdown(true);
         sendMessage.setChatId(chatId);
         sendMessage.setText(s);
+
         try {
             sendMessage(sendMessage);
             logging.log(chatId, "Answer", s);
@@ -125,7 +169,6 @@ public class Bot extends TelegramLongPollingBot {
             logging.log(chatId, "Stack trace", e.getStackTrace().toString());
         }
     }
-
 
     /*
      * Метод возвращает имя бота, указанное при регистрации.

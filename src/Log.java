@@ -4,20 +4,22 @@
     - Exception
     - Stack trace
     - Action
+    - Info
  */
 
 import java.util.Date;
 import java.io.*;
 
 public class Log {
-    private final static String logFile = "/logs.txt";
     private static FileOutputStream fos;
     private boolean mode; //false - производить вывод всей информации в консоль (info); true - выводить значимые логи в файл (debug);
 
     static {
         try {
-            fos = new FileOutputStream(logFile, true);
+            fos = new FileOutputStream(Files.logFile, false);
         } catch (IOException e) {
+            System.out.println(e.getMessage());
+        } catch (Exception e) {
             System.out.println(e.getMessage());
         }
     }
@@ -50,8 +52,8 @@ public class Log {
      */
     public void log(String msg) {
         String date = new Date().toString();
-        String logMsg = date + " " + msg;
-        System.out.println(logMsg);
+        String logMsg = date + " " + msg + "\r\n";
+        System.out.print(logMsg);
         if (mode) {
             try {
                 byte[] buffer = logMsg.getBytes();
@@ -68,8 +70,8 @@ public class Log {
      */
     public void log(String chatId, String tag, String msg) {
         String date = new Date().toString();
-        String logMsg = date + " chatId: " + chatId + " " + tag + ": " + msg;
-        System.out.println(logMsg);
+        String logMsg = date + " chatId: " + chatId + " " + tag + ": " + msg + "\r\n";
+        System.out.print(logMsg);
         if (mode) {
             if (tag.equals("Exception") || tag.equals("Stack trace")) {
                 try {
